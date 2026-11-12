@@ -5,6 +5,9 @@ pub const Vec3 = struct {
     y: f32 = 0,
     z: f32 = 0,
 
+    pub const zero = Vec3{ .x = 0, .y = 0, .z = 0 };
+    pub const up = Vec3{ .x = 0, .y = 1, .z = 0 };
+
     pub fn new(x: f32, y: f32, z: f32) Vec3 {
         return .{ .x = x, .y = y, .z = z };
     }
@@ -48,10 +51,15 @@ pub const Vec3 = struct {
         }
         return self;
     }
+
+    pub fn lerp(a: Vec3, b: Vec3, t: f32) Vec3 {
+        return a.add(b.sub(a).scale(t));
+    }
 };
 
 pub const Mat4 = struct {
-    // Column-major order to pass directly to glUniformMatrix4fv
+    // Column-major order: [col * 4 + row]
+    // Compatible directly with glUniformMatrix4fv
     m: [16]f32,
 
     pub fn identity() Mat4 {
@@ -98,17 +106,6 @@ pub const Mat4 = struct {
         return res;
     }
 
-    pub fn rotationY(rad: f32) Mat4 {
-        var res = Mat4.identity();
-        const c = @cos(rad);
-        const s = @sin(rad);
-        res.m[0] = c;
-        res.m[2] = -s;
-        res.m[8] = s;
-        res.m[10] = c;
-        return res;
-    }
-
     pub fn rotationX(rad: f32) Mat4 {
         var res = Mat4.identity();
         const c = @cos(rad);
@@ -116,6 +113,17 @@ pub const Mat4 = struct {
         res.m[5] = c;
         res.m[6] = s;
         res.m[9] = -s;
+        res.m[10] = c;
+        return res;
+    }
+
+    pub fn rotationY(rad: f32) Mat4 {
+        var res = Mat4.identity();
+        const c = @cos(rad);
+        const s = @sin(rad);
+        res.m[0] = c;
+        res.m[2] = -s;
+        res.m[8] = s;
         res.m[10] = c;
         return res;
     }
@@ -142,9 +150,9 @@ pub const Mat4 = struct {
         return res;
     }
 
-    pub fn lookAt(eye: Vec3, target: Vec3, up: Vec3) Mat4 {
+    pub fn lookAt(eye: Vec3, target: Vec3, up_vec: Vec3) Mat4 {
         const f = target.sub(eye).normalize();
-        const s = f.cross(up).normalize();
+        const s = f.cross(up_vec).normalize();
         const u = s.cross(f);
 
         var res = Mat4.identity();
@@ -163,3 +171,21 @@ pub const Mat4 = struct {
         return res;
     }
 };
+
+test "Vec3 arithmetic" {
+    const a = Vec3.new(1, 2, 3);
+    const b = Vec3.new(4, 5, 6);
+    try std.testing.expectEqual(Vec3.new(5, 7, 9), a.add(b));
+    try std.testing.expectEqual(Vec3.new(-3, -3, -3), a.sub(b));
+    try std.testing.expectEqual(Vec3.new(2, 4, 6), a.scale(2));
+    try std.testing.expectEqual(@as(f32, 32.0), a.dot(b));
+}
+
+test "Mat4 identity multiplication" {
+    const ident = Mat4.identity();
+    const t = Mat4.translation(5, 10, 15);
+    const result = Mat4.mul(ident, t);
+    try std.testing.expectEqual(t.m[12], result.m[12]);
+    try std.testing.expectEqual(t.m[13], result.m[13]);
+    try std.testing.expectEqual(t.m[14], result.m[14]);
+}

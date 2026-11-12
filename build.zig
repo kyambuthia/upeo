@@ -27,4 +27,16 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run Upeo 3D");
     run_step.dependOn(&run_cmd.step);
+
+    // Unit test step
+    const math_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/engine/math/math.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_math_tests = b.addRunArtifact(math_tests);
+    const test_step = b.step("test", "Run engine unit tests");
+    test_step.dependOn(&run_math_tests.step);
 }

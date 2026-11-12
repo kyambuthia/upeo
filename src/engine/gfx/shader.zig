@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("c.zig").c;
+const c = @import("../platform/c.zig").c;
 
 pub const ShaderProgram = struct {
     program_id: c.GLuint,
@@ -51,6 +51,10 @@ pub const ShaderProgram = struct {
     pub fn use(self: ShaderProgram) void {
         c.glUseProgram(self.program_id);
     }
+
+    pub fn setMat4(location: c.GLint, mat: [16]f32) void {
+        c.glUniformMatrix4fv(location, 1, c.GL_FALSE, &mat);
+    }
 };
 
 fn compileShader(shader_type: c.GLenum, src: [*:0]const u8) !c.GLuint {
@@ -75,7 +79,7 @@ fn compileShader(shader_type: c.GLenum, src: [*:0]const u8) !c.GLuint {
     return shader;
 }
 
-pub const VERTEX_SHADER_SOURCE =
+pub const DEFAULT_VERTEX_SHADER =
     \\#version 300 es
     \\precision mediump float;
     \\
@@ -98,7 +102,7 @@ pub const VERTEX_SHADER_SOURCE =
     \\}
 ;
 
-pub const FRAGMENT_SHADER_SOURCE =
+pub const DEFAULT_FRAGMENT_SHADER =
     \\#version 300 es
     \\precision mediump float;
     \\
