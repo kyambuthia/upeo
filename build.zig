@@ -22,9 +22,25 @@ pub fn build(b: *std.Build) void {
         c_trans.addIncludePath(.{ .cwd_relative = local_inc });
     }
 
+    const nix_cflags = if (comptime @hasField(@TypeOf(b.graph.*), "environ_map"))
+        b.graph.environ_map.get("NIX_CFLAGS_COMPILE")
+    else if (comptime @hasField(@TypeOf(b.graph.*), "env_map"))
+        b.graph.env_map.get("NIX_CFLAGS_COMPILE")
+    else
+        null;
+
+    if (nix_cflags) |cflags| {
+        var it = std.mem.tokenizeScalar(u8, cflags, ' ');
+        while (it.next()) |tok| {
+            if (std.mem.eql(u8, tok, "-isystem") or std.mem.eql(u8, tok, "-I")) {
+                if (it.next()) |inc| {
+                    c_trans.addIncludePath(.{ .cwd_relative = inc });
+                }
+            }
+        }
+    }
+
     c_trans.link_libc = true;
-    c_trans.linkSystemLibrary("SDL3", .{});
-    c_trans.linkSystemLibrary("GLESv2", .{});
 
     const c_mod = c_trans.createModule();
 
