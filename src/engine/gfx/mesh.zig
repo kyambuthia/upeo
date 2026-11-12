@@ -48,13 +48,14 @@ pub fn generateSphere(allocator: std.mem.Allocator, radius: f32, rings: usize, s
             const v11 = Vertex{ .pos = .{ x11 * radius, y1 * radius, z11 * radius }, .normal = .{ x11, y1, z11 }, .color = col };
             const v01 = Vertex{ .pos = .{ x01 * radius, y0 * radius, z01 * radius }, .normal = .{ x01, y0, z01 }, .color = col };
 
+            // Outward-facing counter-clockwise triangles
             vertices[idx + 0] = v00;
-            vertices[idx + 1] = v10;
-            vertices[idx + 2] = v11;
+            vertices[idx + 1] = v11;
+            vertices[idx + 2] = v10;
 
             vertices[idx + 3] = v00;
-            vertices[idx + 4] = v11;
-            vertices[idx + 5] = v01;
+            vertices[idx + 4] = v01;
+            vertices[idx + 5] = v11;
 
             idx += 6;
         }
@@ -69,6 +70,7 @@ pub fn putQuad(slice: []Vertex, start_idx: usize, p0: [3]f32, p1: [3]f32, p2: [3
     const v2 = Vertex{ .pos = p2, .normal = normal, .color = color };
     const v3 = Vertex{ .pos = p3, .normal = normal, .color = color };
 
+    // Standard CCW quad triangulation: (v0, v1, v2) and (v0, v2, v3)
     slice[start_idx + 0] = v0;
     slice[start_idx + 1] = v1;
     slice[start_idx + 2] = v2;

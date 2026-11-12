@@ -17,67 +17,67 @@ pub fn generateArenaMesh(allocator: std.mem.Allocator) ![]Vertex {
 
     var idx: usize = 0;
 
-    // 1. Main floor
+    // 1. Main floor (facing +Y upwards)
     idx = putQuad(
         vertices,
         idx,
-        .{ -half_size, 0.0, -half_size },
-        .{ half_size, 0.0, -half_size },
-        .{ half_size, 0.0, half_size },
         .{ -half_size, 0.0, half_size },
+        .{ half_size, 0.0, half_size },
+        .{ half_size, 0.0, -half_size },
+        .{ -half_size, 0.0, -half_size },
         .{ 0.0, 1.0, 0.0 },
         floor_color,
     );
 
-    // 2. North Wall
+    // 2. North Wall (at Z = -half_size, facing +Z inward)
     idx = putQuad(
         vertices,
         idx,
         .{ -half_size, 0.0, -half_size },
-        .{ -half_size, wall_h, -half_size },
-        .{ half_size, wall_h, -half_size },
         .{ half_size, 0.0, -half_size },
+        .{ half_size, wall_h, -half_size },
+        .{ -half_size, wall_h, -half_size },
         .{ 0.0, 0.0, 1.0 },
         wall_color,
     );
 
-    // 3. South Wall
+    // 3. South Wall (at Z = +half_size, facing -Z inward)
     idx = putQuad(
         vertices,
         idx,
         .{ half_size, 0.0, half_size },
-        .{ half_size, wall_h, half_size },
-        .{ -half_size, wall_h, half_size },
         .{ -half_size, 0.0, half_size },
+        .{ -half_size, wall_h, half_size },
+        .{ half_size, wall_h, half_size },
         .{ 0.0, 0.0, -1.0 },
         wall_color,
     );
 
-    // 4. West Wall
+    // 4. West Wall (at X = -half_size, facing +X inward)
     idx = putQuad(
         vertices,
         idx,
         .{ -half_size, 0.0, half_size },
-        .{ -half_size, wall_h, half_size },
-        .{ -half_size, wall_h, -half_size },
         .{ -half_size, 0.0, -half_size },
+        .{ -half_size, wall_h, -half_size },
+        .{ -half_size, wall_h, half_size },
         .{ 1.0, 0.0, 0.0 },
         wall_color,
     );
 
-    // 5. East Wall
+    // 5. East Wall (at X = +half_size, facing -X inward)
     idx = putQuad(
         vertices,
         idx,
         .{ half_size, 0.0, -half_size },
-        .{ half_size, wall_h, -half_size },
-        .{ half_size, wall_h, half_size },
         .{ half_size, 0.0, half_size },
+        .{ half_size, wall_h, half_size },
+        .{ half_size, wall_h, -half_size },
         .{ -1.0, 0.0, 0.0 },
         wall_color,
     );
 
-    // 6. Ramp
+    // 6. Ramp (facing +Y/-Z upward-forward)
     const rx0: f32 = -3.0;
     const rx1: f32 = 3.0;
     const rz0: f32 = 2.0;
@@ -88,10 +88,10 @@ pub fn generateArenaMesh(allocator: std.mem.Allocator) ![]Vertex {
         vertices,
         idx,
         .{ rx0, 0.0, rz0 },
-        .{ rx1, 0.0, rz0 },
-        .{ rx1, ramp_height, rz1 },
         .{ rx0, ramp_height, rz1 },
-        .{ 0.0, 0.9, -0.4 },
+        .{ rx1, ramp_height, rz1 },
+        .{ rx1, 0.0, rz0 },
+        .{ 0.0, 0.9578, -0.2873 },
         ramp_color,
     );
 
