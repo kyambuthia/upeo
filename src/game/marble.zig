@@ -3,6 +3,7 @@ const math = @import("../engine/math/math.zig");
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Input = @import("../engine/input/input.zig").Input;
+const arena = @import("arena.zig");
 
 pub const Marble = struct {
     pos: Vec3 = Vec3.new(0.0, 0.5, 0.0),
@@ -33,6 +34,12 @@ pub const Marble = struct {
         // Gravity
         self.vel.y -= gravity * dt;
 
+        // Slope acceleration: if on ramp, gravity pulls down the incline (-Z)
+        if (self.is_grounded and arena.isOnRamp(self.pos.x, self.pos.z)) {
+            // Slope angle ~16.7 degrees, sin(theta) ~ 0.287
+            self.vel.z -= gravity * 0.287 * dt;
+        }
+
         // Horizontal velocity clamping
         const horiz_speed = @sqrt(self.vel.x * self.vel.x + self.vel.z * self.vel.z);
         if (horiz_speed > max_speed) {
@@ -54,38 +61,8 @@ pub const Marble = struct {
         self.rot_x += (self.vel.z / self.radius) * dt;
         self.rot_z -= (self.vel.x / self.radius) * dt;
 
-        // Height resolution over terrain/ramp
-        var ground_y: f32 = 0.0;
-        if (self.pos.x >= -3.0 and self.pos.x <= 3.0 and self.pos.z >= 2.0 and self.pos.z <= 6.0) {
-            const ramp_t = (self.pos.z - 2.0) / 4.0;
-            ground_y = 1.2 * ramp_t;
-        }
-
-        if (self.pos.y <= ground_y + self.radius) {
-            self.pos.y = ground_y + self.radius;
-            if (self.vel.y < 0) self.vel.y = 0;
-            self.is_grounded = true;
-        } else {
-            self.is_grounded = false;
-        }
-
-        // Boundary walls (size = 12.0)
-        const bound = 12.0 - self.radius;
-        if (self.pos.x < -bound) {
-            self.pos.x = -bound;
-            self.vel.x = -self.vel.x * 0.65;
-        } else if (self.pos.x > bound) {
-            self.pos.x = bound;
-            self.vel.x = -self.vel.x * 0.65;
-        }
-
-        if (self.pos.z < -bound) {
-            self.pos.z = -bound;
-            self.vel.z = -self.vel.z * 0.65;
-        } else if (self.pos.z > bound) {
-            self.pos.z = bound;
-            self.vel.z = -self.vel.z * 0.65;
-        }
+        // Collision detection and response with arena
+        self.is_grounded = arena.resolveCollision(&self.pos, &self.vel, self.radius);
     }
 
     pub fn getModelMatrix(self: Marble) Mat4 {
@@ -96,3 +73,27 @@ pub const Marble = struct {
         return Mat4.mul(t, rot);
     }
 };
+
+test "marble jumping and gravity" {
+    var marble = Marble{};
+    const empty_input = Input{};
+
+    // Marble starts grounded at y = 0.5
+    try std.testing.expect(marble.is_grounded);
+
+    // Trigger jump
+    var jump_input = Input{};
+    jump_input.jump = true;
+    marble.update(jump_input, 0.016);
+
+    try std.testing.expect(!marble.is_grounded);
+    try std.testing.expect(marble.vel.y > 0.0);
+
+    // After enough gravity steps, it lands back and is grounded
+    var i: usize = 0;
+    while (i < 60) : (i += 1) {
+        marble.update(empty_input, 0.016);
+    }
+    try std.testing.expect(marble.is_grounded);
+    try std.testing.expectEqual(@as(f32, 0.5), marble.pos.y);
+}

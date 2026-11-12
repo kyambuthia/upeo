@@ -27,3 +27,6 @@ jobs:
 
       - name: Build Upeo
         run: nix-shell --run "zig build --summary all"
+
+      - name: Run Unit Tests
+        run: nix-shell --run "zig build test --summary all"
