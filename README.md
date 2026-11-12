@@ -19,16 +19,22 @@ Designed to run natively across all platforms—from desktop Linux/macOS/Windows
 
 ```
 upeo/
-├── build.zig          # Zig build definitions
+├── build.zig          # Zig build definitions & TranslateC pipeline
 ├── build.zig.zon      # Package metadata
 ├── shell.nix          # Nix environment definition
 ├── src/
-│   ├── c.zig          # SDL3 & GLES3 C-header imports
-│   ├── game.zig       # Marble physics, collisions, camera controller
 │   ├── main.zig       # Entrypoint & rendering loop
-│   ├── math.zig       # 3D Vector & column-major Mat4 transforms
-│   ├── mesh.zig       # Procedural UV Sphere & arena geometry
-│   └── shader.zig     # GLSL ES 3.00 shader compilation & error handling
+│   ├── tests.zig      # Unified test runner
+│   ├── engine/
+│   │   ├── core/      # Delta clock & timing (time.zig)
+│   │   ├── gfx/       # OpenGL ES 3.0 VAO/VBO, shaders, mesh generation
+│   │   ├── input/     # Event polling and input mapping (input.zig)
+│   │   ├── math/      # Pure Zig Vec3 & column-major Mat4 transforms
+│   │   └── platform/  # SDL3 windowing & C header bindings
+│   └── game/
+│       ├── arena.zig  # Procedural geometry & collision resolution
+│       ├── camera.zig # 3rd-person spring follow camera
+│       └── marble.zig # Rolling physics, slope gravity & angular spin
 └── README.md
 ```
 
@@ -37,7 +43,7 @@ upeo/
 ## Quickstart
 
 ### Prerequisites
-- **Zig 0.16.0+**
+- **Zig 0.16.0+ / 0.17.0+**
 - **SDL3** (`libSDL3`)
 - **OpenGL ES 3 / libGLESv2**
 
@@ -49,6 +55,11 @@ nix-shell --run "zig build run"
 ### Running Native
 ```bash
 zig build run
+```
+
+### Running Unit Tests
+```bash
+zig build test
 ```
 
 ---
