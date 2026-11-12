@@ -2,5 +2,7 @@
 zig-out/
 marble
 marble-ukandi
+upeo
+upeo-*
 *.o
 *.a
