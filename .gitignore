@@ -1,2 +1,6 @@
 .zig-cache/
 zig-out/
+marble
+marble-ukandi
+*.o
+*.a
