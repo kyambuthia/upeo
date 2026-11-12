@@ -29,7 +29,7 @@ pub fn main() !void {
     var height: i32 = 768;
 
     const window = c.SDL_CreateWindow(
-        "3D Marble - Direct OpenGL (Zig + SDL3)",
+        "Upeo - Universal 3D Engine (Zig + SDL3 + OpenGL ES 3.0)",
         width,
         height,
         c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_RESIZABLE,

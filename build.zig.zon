@@ -1,5 +1,5 @@
 .{
-    .name = .web_ogl,
+    .name = .upeo,
     .version = "0.1.0",
     .fingerprint = 0xb135c8e52e75aa77,
     .minimum_zig_version = "0.16.0",
