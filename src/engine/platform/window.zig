@@ -47,12 +47,14 @@ pub const Window = struct {
             _ = c.SDL_GL_SetSwapInterval(0);
         }
 
-        return .{
+        var self = Window{
             .sdl_window = window,
             .gl_context = gl_ctx,
             .width = config.width,
             .height = config.height,
         };
+        self.updateSize();
+        return self;
     }
 
     pub fn deinit(self: *Window) void {
@@ -66,7 +68,7 @@ pub const Window = struct {
     }
 
     pub fn updateSize(self: *Window) void {
-        _ = c.SDL_GetWindowSize(self.sdl_window, &self.width, &self.height);
+        _ = c.SDL_GetWindowSizeInPixels(self.sdl_window, &self.width, &self.height);
         c.glViewport(0, 0, self.width, self.height);
     }
 
