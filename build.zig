@@ -10,10 +10,21 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    if (b.graph.environ_map.get("HOME")) |home| {
+    const local_home = if (comptime @hasField(@TypeOf(b.graph.*), "environ_map"))
+        b.graph.environ_map.get("HOME")
+    else if (comptime @hasField(@TypeOf(b.graph.*), "env_map"))
+        b.graph.env_map.get("HOME")
+    else
+        null;
+
+    if (local_home) |home| {
         const local_inc = b.fmt("{s}/.local/include", .{home});
         c_trans.addIncludePath(.{ .cwd_relative = local_inc });
     }
+
+    c_trans.link_libc = true;
+    c_trans.linkSystemLibrary("SDL3", .{});
+    c_trans.linkSystemLibrary("GLESv2", .{});
 
     const c_mod = c_trans.createModule();
 
@@ -29,7 +40,7 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    if (b.graph.environ_map.get("HOME")) |home| {
+    if (local_home) |home| {
         const local_lib = b.fmt("{s}/.local/lib", .{home});
         exe.root_module.addLibraryPath(.{ .cwd_relative = local_lib });
         const local_inc = b.fmt("{s}/.local/include", .{home});
@@ -44,7 +55,14 @@ pub fn build(b: *std.Build) void {
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-    run_cmd.addPassthruArgs();
+
+    if (comptime @hasDecl(@TypeOf(run_cmd.*), "addPassthruArgs")) {
+        run_cmd.addPassthruArgs();
+    } else {
+        if (b.args) |args| {
+            run_cmd.addArgs(args);
+        }
+    }
 
     const run_step = b.step("run", "Run Upeo 3D");
     run_step.dependOn(&run_cmd.step);
