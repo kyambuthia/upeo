@@ -98,4 +98,57 @@ pub fn build(b: *std.Build) void {
 
     const marble_tests = b.addTest(.{ .name = "marble-tests", .root_module = marble_mod });
     test_step.dependOn(&b.addRunArtifact(marble_tests).step);
+
+    // WebAssembly (Emscripten / WebGL 2.0) build step: `zig build wasm`
+    const emsdk_sysroot = getEnv(b, "EMSDK_SYSROOT") orelse "/usr/local/emsdk/upstream/emscripten/cache/sysroot";
+    const emcc_bin = getEnv(b, "EMCC") orelse "/usr/local/emsdk/upstream/emscripten/emcc";
+    const wasm_target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .emscripten,
+    });
+    const wasm_c_trans = b.addTranslateC(.{
+        .root_source_file = b.path("src/engine/platform/c.h"),
+        .target = wasm_target,
+        .optimize = optimize,
+    });
+    wasm_c_trans.addSystemIncludePath(.{ .cwd_relative = b.fmt("{s}/include", .{emsdk_sysroot}) });
+    wasm_c_trans.link_libc = true;
+    const wasm_c_mod = wasm_c_trans.createModule();
+
+    const wasm_upeo = b.addModule("upeo-wasm", .{
+        .root_source_file = b.path("src/upeo.zig"),
+        .target = wasm_target,
+        .optimize = optimize,
+        .imports = &.{.{ .name = "c", .module = wasm_c_mod }},
+    });
+    wasm_upeo.link_libc = true;
+
+    const wasm_marble_mod = b.createModule(.{
+        .root_source_file = b.path("examples/marble/main.zig"),
+        .target = wasm_target,
+        .optimize = optimize,
+        .imports = &.{.{ .name = "upeo", .module = wasm_upeo }},
+    });
+    wasm_marble_mod.link_libc = true;
+
+    const wasm_lib = b.addLibrary(.{
+        .name = "upeo-marble",
+        .linkage = .static,
+        .root_module = wasm_marble_mod,
+    });
+
+    const wasm_mkdir = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/web" });
+    const emcc_cmd = b.addSystemCommand(&.{
+        emcc_bin,
+        "-sUSE_SDL=3",
+        "-sMIN_WEBGL_VERSION=2",
+        "-sMAX_WEBGL_VERSION=2",
+        "-sFULL_ES3=1",
+        "-sALLOW_MEMORY_GROWTH=1",
+        "-o",
+        "zig-out/web/index.html",
+    });
+    emcc_cmd.addArtifactArg(wasm_lib);
+    emcc_cmd.step.dependOn(&wasm_mkdir.step);
+    b.step("wasm", "Build WebAssembly (Emscripten + WebGL 2.0) bundle").dependOn(&emcc_cmd.step);
 }
