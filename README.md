@@ -4,6 +4,8 @@
 
 Designed to run natively across all platforms—from desktop Linux/macOS/Windows to low-power mobile devices and WebAssembly in browsers—with zero scene graph bloat and predictable frame times.
 
+> **Status:** Desktop Linux (Wayland/X11) is the currently supported target. Windows, macOS, mobile, and WebAssembly builds are planned.
+
 ---
 
 ## Architecture & Principles
@@ -35,6 +37,9 @@ upeo/
 │       ├── arena.zig  # Procedural geometry & collision resolution
 │       ├── camera.zig # 3rd-person spring follow camera
 │       └── marble.zig # Rolling physics, slope gravity & angular spin
+├── docs/
+│   └── ARCHITECTURE.md # Module breakdown & frame loop
+├── CONTRIBUTING.md
 └── README.md
 ```
 
