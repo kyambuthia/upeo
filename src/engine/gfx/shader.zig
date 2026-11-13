@@ -1,40 +1,43 @@
 const std = @import("std");
 const c = @import("../platform/c.zig").c;
+const gl = @import("gl.zig");
+
+const log = std.log.scoped(.gfx);
 
 pub const ShaderProgram = struct {
-    program_id: c.GLuint,
-    u_model: c.GLint,
-    u_view: c.GLint,
-    u_projection: c.GLint,
+    program_id: gl.GLuint,
+    u_model: gl.GLint,
+    u_view: gl.GLint,
+    u_projection: gl.GLint,
 
     pub fn init(vertex_src: [*:0]const u8, fragment_src: [*:0]const u8) !ShaderProgram {
         const vert_shader = try compileShader(c.GL_VERTEX_SHADER, vertex_src);
-        defer c.glDeleteShader(vert_shader);
+        defer gl.DeleteShader(vert_shader);
 
         const frag_shader = try compileShader(c.GL_FRAGMENT_SHADER, fragment_src);
-        defer c.glDeleteShader(frag_shader);
+        defer gl.DeleteShader(frag_shader);
 
-        const program = c.glCreateProgram();
+        const program = gl.CreateProgram();
         if (program == 0) return error.GlCreateProgramFailed;
 
-        c.glAttachShader(program, vert_shader);
-        c.glAttachShader(program, frag_shader);
-        c.glLinkProgram(program);
+        gl.AttachShader(program, vert_shader);
+        gl.AttachShader(program, frag_shader);
+        gl.LinkProgram(program);
 
-        var link_status: c.GLint = 0;
-        c.glGetProgramiv(program, c.GL_LINK_STATUS, &link_status);
+        var link_status: gl.GLint = 0;
+        gl.GetProgramiv(program, c.GL_LINK_STATUS, &link_status);
         if (link_status == 0) {
             var info_log: [512]u8 = undefined;
-            var len: c.GLsizei = 0;
-            c.glGetProgramInfoLog(program, 512, &len, &info_log);
-            std.debug.print("Program link error: {s}\n", .{info_log[0..@intCast(len)]});
-            c.glDeleteProgram(program);
+            var len: gl.GLsizei = 0;
+            gl.GetProgramInfoLog(program, 512, &len, &info_log);
+            log.err("Program link error: {s}", .{info_log[0..@intCast(len)]});
+            gl.DeleteProgram(program);
             return error.ProgramLinkFailed;
         }
 
-        const u_model = c.glGetUniformLocation(program, "u_model");
-        const u_view = c.glGetUniformLocation(program, "u_view");
-        const u_projection = c.glGetUniformLocation(program, "u_projection");
+        const u_model = gl.GetUniformLocation(program, "u_model");
+        const u_view = gl.GetUniformLocation(program, "u_view");
+        const u_projection = gl.GetUniformLocation(program, "u_projection");
 
         return .{
             .program_id = program,
@@ -45,34 +48,34 @@ pub const ShaderProgram = struct {
     }
 
     pub fn deinit(self: ShaderProgram) void {
-        c.glDeleteProgram(self.program_id);
+        gl.DeleteProgram(self.program_id);
     }
 
     pub fn use(self: ShaderProgram) void {
-        c.glUseProgram(self.program_id);
+        gl.UseProgram(self.program_id);
     }
 
-    pub fn setMat4(location: c.GLint, mat: [16]f32) void {
-        c.glUniformMatrix4fv(location, 1, c.GL_FALSE, &mat);
+    pub fn setMat4(location: gl.GLint, mat: [16]f32) void {
+        gl.UniformMatrix4fv(location, 1, c.GL_FALSE, &mat);
     }
 };
 
-fn compileShader(shader_type: c.GLenum, src: [*:0]const u8) !c.GLuint {
-    const shader = c.glCreateShader(shader_type);
+fn compileShader(shader_type: gl.GLenum, src: [*:0]const u8) !gl.GLuint {
+    const shader = gl.CreateShader(shader_type);
     if (shader == 0) return error.GlCreateShaderFailed;
 
     const src_ptr: ?[*]const u8 = src;
-    c.glShaderSource(shader, 1, &src_ptr, null);
-    c.glCompileShader(shader);
+    gl.ShaderSource(shader, 1, &src_ptr, null);
+    gl.CompileShader(shader);
 
-    var success: c.GLint = 0;
-    c.glGetShaderiv(shader, c.GL_COMPILE_STATUS, &success);
+    var success: gl.GLint = 0;
+    gl.GetShaderiv(shader, c.GL_COMPILE_STATUS, &success);
     if (success == 0) {
         var info_log: [512]u8 = undefined;
-        var len: c.GLsizei = 0;
-        c.glGetShaderInfoLog(shader, 512, &len, &info_log);
-        std.debug.print("Shader compile error: {s}\n", .{info_log[0..@intCast(len)]});
-        c.glDeleteShader(shader);
+        var len: gl.GLsizei = 0;
+        gl.GetShaderInfoLog(shader, 512, &len, &info_log);
+        log.err("Shader compile error: {s}", .{info_log[0..@intCast(len)]});
+        gl.DeleteShader(shader);
         return error.ShaderCompileFailed;
     }
 

@@ -34,7 +34,6 @@ fn linkPlatform(b: *std.Build, mod: *std.Build.Module) void {
     }
     mod.link_libc = true;
     mod.linkSystemLibrary("SDL3", .{});
-    mod.linkSystemLibrary("GLESv2", .{});
 }
 
 fn addPassthruArgs(b: *std.Build, run: *std.Build.Step.Run) void {

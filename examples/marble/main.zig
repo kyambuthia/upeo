@@ -6,6 +6,7 @@ const c = upeo.c;
 const Input = upeo.input.Input;
 const Clock = upeo.time.Clock;
 const ShaderProgram = upeo.gfx.ShaderProgram;
+const gl = upeo.gfx.gl;
 const shader_src = upeo.gfx.shaders;
 const MeshBuffer = upeo.gfx.MeshBuffer;
 const mesh = upeo.gfx.mesh;
@@ -52,10 +53,10 @@ pub fn main() !void {
     defer arena_buf.deinit();
 
     // Setup GLES State
-    c.glEnable(c.GL_DEPTH_TEST);
-    c.glDepthFunc(c.GL_LESS);
-    c.glEnable(c.GL_CULL_FACE);
-    c.glCullFace(c.GL_BACK);
+    gl.Enable(c.GL_DEPTH_TEST);
+    gl.DepthFunc(c.GL_LESS);
+    gl.Enable(c.GL_CULL_FACE);
+    gl.CullFace(c.GL_BACK);
 
     var marble = Marble{};
     var camera = Camera{};
@@ -81,8 +82,8 @@ pub fn main() !void {
         camera.update(marble.pos, dt);
 
         // Render Frame
-        c.glClearColor(0.14, 0.18, 0.24, 1.0);
-        c.glClear(c.GL_COLOR_BUFFER_BIT | c.GL_DEPTH_BUFFER_BIT);
+        gl.ClearColor(0.14, 0.18, 0.24, 1.0);
+        gl.Clear(c.GL_COLOR_BUFFER_BIT | c.GL_DEPTH_BUFFER_BIT);
 
         program.use();
 

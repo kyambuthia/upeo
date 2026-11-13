@@ -15,6 +15,7 @@ pub const platform = struct {
 };
 
 pub const gfx = struct {
+    pub const gl = @import("engine/gfx/gl.zig");
     pub const ShaderProgram = @import("engine/gfx/shader.zig").ShaderProgram;
     pub const shaders = @import("engine/gfx/shader.zig");
     pub const MeshBuffer = @import("engine/gfx/buffer.zig").MeshBuffer;
@@ -25,5 +26,6 @@ test {
     _ = math;
     _ = time;
     _ = input;
+    _ = gfx.gl;
     _ = gfx.mesh;
 }

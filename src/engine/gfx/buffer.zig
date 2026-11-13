@@ -1,22 +1,22 @@
-const std = @import("std");
 const c = @import("../platform/c.zig").c;
+const gl = @import("gl.zig");
 const Vertex = @import("mesh.zig").Vertex;
 
 pub const MeshBuffer = struct {
-    vao: c.GLuint,
-    vbo: c.GLuint,
-    vertex_count: c.GLsizei,
+    vao: gl.GLuint,
+    vbo: gl.GLuint,
+    vertex_count: gl.GLsizei,
 
     pub fn init(vertices: []const Vertex) MeshBuffer {
-        var vao: c.GLuint = 0;
-        var vbo: c.GLuint = 0;
+        var vao: gl.GLuint = 0;
+        var vbo: gl.GLuint = 0;
 
-        c.glGenVertexArrays(1, &vao);
-        c.glGenBuffers(1, &vbo);
+        gl.GenVertexArrays(1, &vao);
+        gl.GenBuffers(1, &vbo);
 
-        c.glBindVertexArray(vao);
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-        c.glBufferData(
+        gl.BindVertexArray(vao);
+        gl.BindBuffer(c.GL_ARRAY_BUFFER, vbo);
+        gl.BufferData(
             c.GL_ARRAY_BUFFER,
             @intCast(vertices.len * @sizeOf(Vertex)),
             vertices.ptr,
@@ -26,18 +26,18 @@ pub const MeshBuffer = struct {
         const stride = @sizeOf(Vertex);
 
         // Attribute 0: Position
-        c.glEnableVertexAttribArray(0);
-        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, c.GL_FALSE, stride, @ptrFromInt(@offsetOf(Vertex, "pos")));
+        gl.EnableVertexAttribArray(0);
+        gl.VertexAttribPointer(0, 3, c.GL_FLOAT, c.GL_FALSE, stride, @ptrFromInt(@offsetOf(Vertex, "pos")));
 
         // Attribute 1: Normal
-        c.glEnableVertexAttribArray(1);
-        c.glVertexAttribPointer(1, 3, c.GL_FLOAT, c.GL_FALSE, stride, @ptrFromInt(@offsetOf(Vertex, "normal")));
+        gl.EnableVertexAttribArray(1);
+        gl.VertexAttribPointer(1, 3, c.GL_FLOAT, c.GL_FALSE, stride, @ptrFromInt(@offsetOf(Vertex, "normal")));
 
         // Attribute 2: Color
-        c.glEnableVertexAttribArray(2);
-        c.glVertexAttribPointer(2, 3, c.GL_FLOAT, c.GL_FALSE, stride, @ptrFromInt(@offsetOf(Vertex, "color")));
+        gl.EnableVertexAttribArray(2);
+        gl.VertexAttribPointer(2, 3, c.GL_FLOAT, c.GL_FALSE, stride, @ptrFromInt(@offsetOf(Vertex, "color")));
 
-        c.glBindVertexArray(0);
+        gl.BindVertexArray(0);
 
         return .{
             .vao = vao,
@@ -49,13 +49,13 @@ pub const MeshBuffer = struct {
     pub fn deinit(self: MeshBuffer) void {
         var vbo = self.vbo;
         var vao = self.vao;
-        c.glDeleteBuffers(1, &vbo);
-        c.glDeleteVertexArrays(1, &vao);
+        gl.DeleteBuffers(1, &vbo);
+        gl.DeleteVertexArrays(1, &vao);
     }
 
     pub fn draw(self: MeshBuffer) void {
-        c.glBindVertexArray(self.vao);
-        c.glDrawArrays(c.GL_TRIANGLES, 0, self.vertex_count);
-        c.glBindVertexArray(0);
+        gl.BindVertexArray(self.vao);
+        gl.DrawArrays(c.GL_TRIANGLES, 0, self.vertex_count);
+        gl.BindVertexArray(0);
     }
 };
