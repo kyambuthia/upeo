@@ -4,6 +4,7 @@ const math = upeo.math;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Input = upeo.input.Input;
+const Key = upeo.input.Key;
 const arena = @import("arena.zig");
 
 pub const Marble = struct {
@@ -21,13 +22,13 @@ pub const Marble = struct {
         const gravity: f32 = 20.0;
 
         // Input drive
-        if (input.up) self.vel.z += accel * dt;
-        if (input.down) self.vel.z -= accel * dt;
-        if (input.left) self.vel.x -= accel * dt;
-        if (input.right) self.vel.x += accel * dt;
+        if (input.isKeyDown(Key.w) or input.isKeyDown(Key.up)) self.vel.z += accel * dt;
+        if (input.isKeyDown(Key.s) or input.isKeyDown(Key.down)) self.vel.z -= accel * dt;
+        if (input.isKeyDown(Key.a) or input.isKeyDown(Key.left)) self.vel.x -= accel * dt;
+        if (input.isKeyDown(Key.d) or input.isKeyDown(Key.right)) self.vel.x += accel * dt;
 
-        // Jump
-        if (input.jump and self.is_grounded) {
+        // Jump (edge-triggered or held while grounded)
+        if (input.isKeyDown(Key.space) and self.is_grounded) {
             self.vel.y = 7.5;
             self.is_grounded = false;
         }
@@ -84,7 +85,7 @@ test "marble jumping and gravity" {
 
     // Trigger jump
     var jump_input = Input{};
-    jump_input.jump = true;
+    jump_input.setKey(Key.space, true);
     marble.update(jump_input, 0.016);
 
     try std.testing.expect(!marble.is_grounded);

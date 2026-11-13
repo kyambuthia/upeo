@@ -135,7 +135,7 @@ fn isGlProc(comptime T: type) bool {
 /// Debug helper: drains and logs pending GL errors. Compiled out of release
 /// builds so it can be sprinkled liberally.
 pub fn checkError(src: std.builtin.SourceLocation) void {
-    if (@import("builtin").mode != .Debug) return;
+    if (@import("builtin").mode != .debug) return;
     while (true) {
         const err = GetError();
         if (err == c.GL_NO_ERROR) break;
