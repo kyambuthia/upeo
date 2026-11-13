@@ -53,32 +53,33 @@ upeo/
 
 ## Quickstart
 
-### Prerequisites
+### Prerequisites (All Platforms)
 - **Zig 0.16.0+** (verified on `0.17.0`)
-- **SDL3** (`libSDL3`)
-- **OpenGL ES 3.0** drivers (loaded at runtime via SDL3)
-- *(Optional, for `zig build wasm`)* **Emscripten SDK** (`EMCC` / `EMSDK_SYSROOT`)
+- **SDL3** development headers and library (`SDL3`)
+- **OpenGL ES 3.0** headers (`<GLES3/gl3.h>`) and drivers (e.g., Mesa on Linux, ANGLE on Windows/macOS; entry points are loaded at runtime via SDL3)
+- *(Optional, for WebAssembly)* **Emscripten SDK**
 
-### Running with Nix (Recommended)
+### Build, Run & Test
 ```bash
-nix-shell --run "zig build run"
-```
-
-### Running Native
-```bash
+# Build and run the marble demo
 zig build run
-```
 
-### Running Unit Tests
-```bash
+# Run engine and example unit tests
 zig build test
 ```
 
-### Building for WebAssembly (Emscripten + WebGL 2.0)
-```bash
-zig build wasm
-```
-Outputs `zig-out/web/index.html`, `index.js`, and `index.wasm`.
+### Platform Notes
+- **Linux**: Install `sdl3` and OpenGL ES 3.0 development headers from your package manager (or into `~/.local/include` and `~/.local/lib`), then run `zig build run`. If you use Nix, [shell.nix](shell.nix) provides the full environment:
+  ```bash
+  nix-shell --run "zig build run"
+  ```
+- **Windows** *(native support planned)*: Recommended via **WSL2** (using the Linux instructions above) or **WebAssembly**. Native Windows builds are not yet wired into [build.zig](build.zig) and require manual SDL3 + ANGLE/GLES3 setup.
+- **macOS** *(planned)*: Requires `zig`, `sdl3` (e.g., via Homebrew), and OpenGL ES 3.0 / ANGLE headers.
+- **WebAssembly (All OSes)**: With the Emscripten SDK installed (set `EMCC` and `EMSDK_SYSROOT` if not under `/usr/local/emsdk`), build the WebGL 2.0 bundle:
+  ```bash
+  zig build wasm
+  ```
+  Outputs `zig-out/web/index.html`, `index.js`, and `index.wasm`.
 
 ---
 
