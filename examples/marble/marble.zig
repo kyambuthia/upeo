@@ -1,8 +1,9 @@
 const std = @import("std");
-const math = @import("../engine/math/math.zig");
+const upeo = @import("upeo");
+const math = upeo.math;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
-const Input = @import("../engine/input/input.zig").Input;
+const Input = upeo.input.Input;
 const arena = @import("arena.zig");
 
 pub const Marble = struct {

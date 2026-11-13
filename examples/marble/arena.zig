@@ -1,7 +1,8 @@
 const std = @import("std");
-const math = @import("../engine/math/math.zig");
+const upeo = @import("upeo");
+const math = upeo.math;
 const Vec3 = math.Vec3;
-const mesh = @import("../engine/gfx/mesh.zig");
+const mesh = upeo.gfx.mesh;
 const Vertex = mesh.Vertex;
 const putQuad = mesh.putQuad;
 
@@ -101,9 +102,7 @@ pub fn generateArenaMesh(allocator: std.mem.Allocator) ![]Vertex {
         idx,
         .{ HALF_SIZE, 0.0, HALF_SIZE },
         .{ -HALF_SIZE, 0.0, HALF_SIZE },
-        .{ -HALF_SIZE, WALL_HEIGHT, half_size: {
-            break :half_size HALF_SIZE;
-        } },
+        .{ -HALF_SIZE, WALL_HEIGHT, HALF_SIZE },
         .{ HALF_SIZE, WALL_HEIGHT, HALF_SIZE },
         .{ 0.0, 0.0, -1.0 },
         wall_color,

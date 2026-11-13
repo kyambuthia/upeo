@@ -1,21 +1,26 @@
 const std = @import("std");
 
-// Engine subsystems
-const Window = @import("engine/platform/window.zig").Window;
-const c = @import("engine/platform/c.zig").c;
-const Input = @import("engine/input/input.zig").Input;
-const Clock = @import("engine/core/time.zig").Clock;
-const ShaderProgram = @import("engine/gfx/shader.zig").ShaderProgram;
-const shader_src = @import("engine/gfx/shader.zig");
-const MeshBuffer = @import("engine/gfx/buffer.zig").MeshBuffer;
-const mesh = @import("engine/gfx/mesh.zig");
-const math = @import("engine/math/math.zig");
+const upeo = @import("upeo");
+const Window = upeo.platform.Window;
+const c = upeo.c;
+const Input = upeo.input.Input;
+const Clock = upeo.time.Clock;
+const ShaderProgram = upeo.gfx.ShaderProgram;
+const shader_src = upeo.gfx.shaders;
+const MeshBuffer = upeo.gfx.MeshBuffer;
+const mesh = upeo.gfx.mesh;
+const math = upeo.math;
 const Mat4 = math.Mat4;
 
 // Game components
-const Marble = @import("game/marble.zig").Marble;
-const Camera = @import("game/camera.zig").Camera;
-const arena = @import("game/arena.zig");
+const Marble = @import("marble.zig").Marble;
+const Camera = @import("camera.zig").Camera;
+const arena = @import("arena.zig");
+
+test {
+    _ = @import("marble.zig");
+    _ = @import("arena.zig");
+}
 
 pub fn main() !void {
     const allocator = std.heap.c_allocator;

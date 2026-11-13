@@ -1,5 +1,6 @@
 const std = @import("std");
-const math = @import("../engine/math/math.zig");
+const upeo = @import("upeo");
+const math = upeo.math;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
