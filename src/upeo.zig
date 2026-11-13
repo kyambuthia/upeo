@@ -8,6 +8,7 @@ pub const c = @import("engine/platform/c.zig").c;
 pub const app = @import("engine/app.zig");
 pub const core = @import("engine/core/core.zig");
 pub const math = @import("engine/math/math.zig");
+pub const net = @import("engine/net/net.zig");
 pub const time = @import("engine/core/time.zig");
 pub const input = @import("engine/input/input.zig");
 
@@ -27,6 +28,7 @@ pub const gfx = struct {
 test {
     _ = core;
     _ = math;
+    _ = net;
     _ = time;
     _ = input;
     _ = gfx.gl;
