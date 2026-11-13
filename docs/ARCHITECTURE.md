@@ -1,82 +1,66 @@
 # Upeo Architecture
 
-Upeo is architected as a lean, direct-to-metal 3D engine designed for instant startup, zero garbage collection pauses, and multi-platform reach.
+Upeo is a lightweight, direct-to-metal 3D engine in Zig targeting OpenGL ES 3.0 / WebGL 2.0, built for predictable frame times, multi-core job parallelism, and low-latency UDP networking.
 
 ---
 
 ## Architectural Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Game (src/game/)                       │
-│         marble.zig  ·  camera.zig  ·  arena.zig             │
-└──────────────┬───────────────────────────────┬──────────────┘
-               │                               │
-      ┌────────▼─────────┐            ┌────────▼─────────┐
-      │   Math Engine    │            │  Mesh Generators │
-      │ engine/math/     │            │  engine/gfx/     │
-      │   math.zig       │            │    mesh.zig      │
-      └────────┬─────────┘            └────────┬─────────┘
-               │                               │
-┌──────────────▼───────────────────────────────▼──────────────┐
-│              Direct OpenGL ES 3.0 (engine/gfx/)             │
-│      buffer.zig (VAO / VBO)  ·  shader.zig (GLSL ES 3.00)   │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────┐
-│     Platform, Input & Timing (engine/platform, input, core) │
-│            window.zig · c.h/c.zig · input.zig · time.zig    │
-├─────────────────────────────────────────────────────────────┤
-│  Linux (Wayland / X11)  │  Windows / macOS*  │  Web (WASM)*  │
-└─────────────────────────────────────────────────────────────┘
-                         * planned, not yet wired into build.zig
+┌──────────────────────────────────────────────────────────────────────┐
+│                       Examples / Games (examples/)                   │
+│                          @import("upeo")                             │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │
+┌──────────────────────────────────▼───────────────────────────────────┐
+│                      Upeo Engine (src/upeo.zig)                      │
+├───────────────┬──────────────────┬──────────────────┬────────────────┤
+│  App & Input  │ Performance Core │   ECS & Math     │   Networking   │
+│  app.zig      │  core/memory.zig │  ecs/ecs.zig     │ net/           │
+│  input.zig    │  core/handle.zig │  math/math.zig   │  serialize.zig │
+│  window.zig   │  core/jobs.zig   │                  │  sequence.zig  │
+│               │  core/time.zig   │                  │  reliability   │
+├───────────────┴──────────────────┴──────────────────┴────────────────┤
+│                      Graphics (src/engine/gfx/)                      │
+│   gl.zig (runtime proc loader) · buffer.zig · shader.zig · texture   │
+├──────────────────────────────────────────────────────────────────────┤
+│       Platform & Toolchains: Linux (Wayland/X11) · WASM (WebGL2)     │
+└──────────────────────────────────────────────────────────────────────┘
 ```
-
-`src/main.zig` owns the frame loop and ties every layer together.
-
----
-
-## Frame Loop (`src/main.zig`)
-
-1. `Input.resetFrame()` then drain `SDL_PollEvent` into `Input.processEvent`.
-2. On resize, `Window.updateSize()` re-queries pixel dimensions and resets `glViewport`.
-3. `Clock.tick()` returns a variable `dt` (clamped to 50 ms).
-4. `Marble.update(input, dt)` → `Camera.update(marble.pos, dt)`.
-5. Clear, bind the shader, upload projection/view, draw the arena (identity model) and the marble (its model matrix), then `Window.swap()`.
-
-All geometry is generated once at startup (via `std.heap.c_allocator`); nothing is allocated inside the loop.
 
 ---
 
 ## Module Breakdown
 
-### 1. Platform (`src/engine/platform/`)
-- **`c.h` / `c.zig`**: C headers (`SDL3/SDL.h`, `GLES3/gl3.h`) translated by `build.zig`'s `addTranslateC` step and exposed as the `c` module.
-- **`window.zig`**: Initializes SDL video, requests an OpenGL ES 3.0 context (24-bit depth, double buffered), configures vsync, and tracks High-DPI pixel size / aspect ratio.
+### 1. Application Lifecycle (`src/engine/app.zig`)
+- Drives `Game` (`init`, `fixedUpdate`, `update`, `render`, `deinit`) via `SDL_EnterAppMainCallbacks` (`SDL_AppInit` / `SDL_AppIterate` / `SDL_AppEvent` / `SDL_AppQuit`) so native desktop and Emscripten/WebGL 2.0 share one non-blocking loop.
+- Uses `DebugAllocator` in Debug builds for leak detection on shutdown and `c_allocator` in release builds.
 
-### 2. Input (`src/engine/input/input.zig`)
-- Maps SDL keyboard scancodes to boolean actions (`up`, `down`, `left`, `right`, `jump`) and tracks `quit_requested` / `resized` flags.
+### 2. Platform & Graphics (`src/engine/platform/`, `src/engine/gfx/`)
+- **`gl.zig`**: Loads OpenGL ES 3.0 entry points at runtime through `SDL_GL_GetProcAddress`, avoiding a hard `libGLESv2` link dependency.
+- **`buffer.zig`**: Comptime `VertexLayout` attribute binding for any `extern struct`, static/dynamic VBOs, index buffers (EBO), `glBufferSubData`, and instanced draws.
+- **`shader.zig` / `texture.zig` / `camera.zig` / `mesh.zig`**: GLSL ES 3.00 shaders, generic uniform setters, `Texture2D`, perspective `Camera`, and procedural geometry.
 
-### 3. Timing (`src/engine/core/time.zig`)
-- `Clock` computes delta time from `SDL_GetTicks()`, clamped to 50 ms to avoid a spiral of death. `fixed_delta` (1/60 s) is defined for a future fixed-timestep loop.
+### 3. Performance Core (`src/engine/core/`)
+- **`time.zig`**: Nanosecond `Clock` (`SDL_GetTicksNS`) with fixed-timestep accumulator (60 Hz default, 50 ms lag clamp) and render interpolation `alpha()`.
+- **`memory.zig`**: `FrameArena`, `DoubleFrameArena`, O(1) free-list `Pool(T)`, and `GuardAllocator` to catch heap allocations inside the frame loop.
+- **`handle.zig`**: Type-safe generational `Handle(Tag)` and dense-array `SlotMap(T, Tag)`.
+- **`jobs.zig`**: Lock-free Chase–Lev `WorkStealingDeque` (PPoPP 2013 memory orderings), cache-line-sized `Job`s, random-victim stealing, cooperative `wait()`, `parallelFor`, and single-threaded fallback.
 
-### 4. Graphics (`src/engine/gfx/`)
-- **`shader.zig`**: Compiles/links GLSL ES 3.00 (`#version 300 es`) programs, caches `u_model` / `u_view` / `u_projection` uniform locations, and embeds the default shaders (directional sun light + ambient fill).
-- **`buffer.zig`**: `MeshBuffer` uploads `[]Vertex` into a VAO/VBO (attributes: 0 = position, 1 = normal, 2 = color) and draws with `glDrawArrays(GL_TRIANGLES)`.
-- **`mesh.zig`**: `Vertex` layout (`extern struct`), UV-sphere generator with striped coloring, and `putQuad` helper. All faces use CCW winding for back-face culling.
+### 4. ECS & Math (`src/engine/ecs/`, `src/engine/math/`)
+- **`ecs.zig`**: Generational `EntityRegistry`, sparse-set `ComponentPool(T)` with contiguous iteration, and `join2`.
+- **`math.zig`**: `Vec2`, `Vec3`, `Vec4`, `Quat` (axis-angle, SLERP, `toMat4`), and column-major `Mat4` (`perspective`, `lookAt`, `transpose`, `inverse`).
 
-### 5. Math (`src/engine/math/math.zig`)
-- Pure Zig `Vec3` and column-major `Mat4` (`[16]f32`) passed directly to `glUniformMatrix4fv` with no transposition. Provides translation, scaling, rotations, `perspective`, and `lookAt`.
-
-### 6. Game (`src/game/`)
-- **`arena.zig`**: 24×24 floor, boundary walls, and a ramp. Exposes `getSurfaceHeight`, `isOnRamp`, `resolveCollision` (ground snap + wall bounce, restitution 0.65), and `generateArenaMesh`.
-- **`marble.zig`**: Sphere kinematics — input acceleration, jump, gravity, slope pull on the ramp, horizontal speed cap, ground friction, Euler integration, and rolling spin for visuals.
-- **`camera.zig`**: Third-person camera that lerps toward an offset behind/above the marble and looks at it.
+### 5. Networking (`src/engine/net/`)
+- **`serialize.zig`**: 64-bit scratch `BitWriter`/`BitReader` with bounded-range ints and quantized floats.
+- **`sequence.zig` / `reliability.zig`**: RFC 1982 sequence wraparound math, `SequenceBuffer`, 32-bit redundant ack bitfields, and RFC 6298 Jacobson/Karels RTT/RTO estimation.
+- **`channel.zig` / `connection.zig`**: Reliable-ordered message channel and client/server state machine with padded anti-amplification challenge/response handshake.
+- **`transport.zig` / `snapshot.zig`**: Non-blocking POSIX `UdpSocket`, deterministic `SimulatedNetwork` (loss/jitter/duplication), `SnapshotBuffer` interpolation, and `PredictionBuffer` reconciliation.
 
 ---
 
 ## Build & Test
 
-- `build.zig` resolves C headers from `~/.local/include` and from `NIX_CFLAGS_COMPILE` (Nix shells), links `SDL3` and `GLESv2`, and supports both Zig 0.16 and 0.17 build APIs.
-- `zig build test` runs `src/tests.zig`, which pulls in the unit tests in `math.zig`, `arena.zig`, and `marble.zig`.
-- CI (`.github/workflows/ci.yml`) runs `zig fmt --check`, build, and tests inside `nix-shell`.
+- `zig build` — builds `upeo-marble` (native).
+- `zig build wasm` — builds the `wasm32-emscripten` + WebGL 2.0 bundle in `zig-out/web/index.html`.
+- `zig build test` — runs engine and example unit tests (`engine-tests` + `marble-tests`).
