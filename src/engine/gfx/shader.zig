@@ -55,6 +55,30 @@ pub const ShaderProgram = struct {
         gl.UseProgram(self.program_id);
     }
 
+    pub fn getUniform(self: ShaderProgram, name: [*:0]const u8) gl.GLint {
+        return gl.GetUniformLocation(self.program_id, name);
+    }
+
+    pub fn setInt(location: gl.GLint, value: i32) void {
+        gl.Uniform1i(location, value);
+    }
+
+    pub fn setFloat(location: gl.GLint, value: f32) void {
+        gl.Uniform1f(location, value);
+    }
+
+    pub fn setVec3(location: gl.GLint, v: [3]f32) void {
+        gl.Uniform3fv(location, 1, &v);
+    }
+
+    pub fn setVec4(location: gl.GLint, v: [4]f32) void {
+        gl.Uniform4fv(location, 1, &v);
+    }
+
+    pub fn setMat3(location: gl.GLint, mat: [9]f32) void {
+        gl.UniformMatrix3fv(location, 1, c.GL_FALSE, &mat);
+    }
+
     pub fn setMat4(location: gl.GLint, mat: [16]f32) void {
         gl.UniformMatrix4fv(location, 1, c.GL_FALSE, &mat);
     }

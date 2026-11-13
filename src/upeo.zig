@@ -22,6 +22,10 @@ pub const gfx = struct {
     pub const ShaderProgram = @import("engine/gfx/shader.zig").ShaderProgram;
     pub const shaders = @import("engine/gfx/shader.zig");
     pub const MeshBuffer = @import("engine/gfx/buffer.zig").MeshBuffer;
+    pub const BufferUsage = @import("engine/gfx/buffer.zig").BufferUsage;
+    pub const Texture2D = @import("engine/gfx/texture.zig").Texture2D;
+    pub const TextureConfig = @import("engine/gfx/texture.zig").TextureConfig;
+    pub const Camera = @import("engine/gfx/camera.zig").Camera;
     pub const mesh = @import("engine/gfx/mesh.zig");
 };
 
@@ -33,4 +37,5 @@ test {
     _ = input;
     _ = gfx.gl;
     _ = gfx.mesh;
+    _ = @import("engine/gfx/buffer.zig");
 }
