@@ -1,19 +1,21 @@
 # Upeo
 
-**Upeo** (*Swahili for "The Horizon / Limitless Scope"*) is a lightweight, universal 3D game engine and physics sandbox targeting **OpenGL ES 3.0 / GLSL ES 3.00**, built in **Zig** with **SDL3**.
+**Upeo** (*Swahili for "The Horizon / Limitless Scope"*) is a lightweight, direct-to-metal 3D game engine in **Zig** targeting **OpenGL ES 3.0 / WebGL 2.0** (GLSL ES 3.00) and **SDL3**.
 
-Designed to run natively across all platforms—from desktop Linux/macOS/Windows to low-power mobile devices and WebAssembly in browsers—with zero scene graph bloat and predictable frame times.
+Designed for predictable frame times, multi-core job parallelism, and low-latency UDP networking across native desktop and browser WebAssembly targets—with zero scene graph bloat.
 
-> **Status:** Desktop Linux (Wayland/X11) is the currently supported target. Windows, macOS, mobile, and WebAssembly builds are planned.
+> **Status:** Desktop Linux (Wayland/X11) and WebAssembly (`wasm32-emscripten` + WebGL 2.0) are currently supported. Windows, macOS, and mobile targets are planned.
 
 ---
 
 ## Architecture & Principles
 
-- **Direct Metal**: 100% direct OpenGL ES 3.0 calls (`<GLES3/gl3.h>`). No abstraction layers between game logic and GPU vertex/uniform buffers.
-- **Cross-Platform Host**: SDL3 handles window creation, event pump, timing, and Wayland/X11 surface management.
-- **Predictable Memory**: Zero hidden dynamic memory allocations during the frame loop. Deterministic geometry generation.
-- **Single Shader Pipeline**: GLSL ES 3.00 shaders (`#version 300 es`) that compile identically on native GPU drivers and browser WebGL 2.0.
+- **Direct Metal**: Direct OpenGL ES 3.0 calls (`<GLES3/gl3.h>`) loaded at runtime via `SDL_GL_GetProcAddress`—avoiding a hard `libGLESv2` link dependency and keeping native and WebGL 2.0 shader pipelines identical (`#version 300 es`).
+- **Unified Callback Loop**: Uses `SDL_EnterAppMainCallbacks` (`init`, `fixedUpdate`, `update`, `render`, `deinit`) so native desktop and Emscripten/WebGL 2.0 share the same non-blocking application lifecycle.
+- **Predictable Memory & Parallelism**: Frame arenas, O(1) object pools, `GuardAllocator`, generational `SlotMap`s, sparse-set ECS, and a lock-free Chase–Lev work-stealing job system.
+- **Low-Latency Networking**: Bit-level serialization, RFC 1982 sequence wraparound, RFC 6298 RTT/RTO reliability, reliable-ordered channels, challenge/response handshakes, non-blocking UDP/simulated transport, and snapshot interpolation/prediction.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a detailed module breakdown.
 
 ---
 
@@ -21,24 +23,28 @@ Designed to run natively across all platforms—from desktop Linux/macOS/Windows
 
 ```
 upeo/
-├── build.zig          # Zig build definitions & TranslateC pipeline
-├── build.zig.zon      # Package metadata
-├── shell.nix          # Nix environment definition
+├── build.zig                # Zig build definitions (native, tests, wasm)
+├── build.zig.zon            # Package metadata (minimum Zig 0.16.0)
+├── shell.nix                # Nix environment definition
 ├── src/
-│   ├── main.zig       # Entrypoint & rendering loop
-│   ├── tests.zig      # Unified test runner
-│   ├── engine/
-│   │   ├── core/      # Delta clock & timing (time.zig)
-│   │   ├── gfx/       # OpenGL ES 3.0 VAO/VBO, shaders, mesh generation
-│   │   ├── input/     # Event polling and input mapping (input.zig)
-│   │   ├── math/      # Pure Zig Vec3 & column-major Mat4 transforms
-│   │   └── platform/  # SDL3 windowing & C header bindings
-│   └── game/
-│       ├── arena.zig  # Procedural geometry & collision resolution
-│       ├── camera.zig # 3rd-person spring follow camera
-│       └── marble.zig # Rolling physics, slope gravity & angular spin
+│   ├── upeo.zig             # Engine root module (`@import("upeo")`)
+│   └── engine/
+│       ├── app.zig          # SDL3 callback lifecycle & fixed-timestep loop
+│       ├── core/            # Clock, FrameArena/Pool, Handle/SlotMap, Jobs
+│       ├── ecs/             # Generational EntityRegistry, sparse-set ComponentPool, join2
+│       ├── gfx/             # Runtime GLES3 loader, MeshBuffer, ShaderProgram, Texture2D, Camera, mesh
+│       ├── input/           # SDL3 event polling & keyboard/mouse state
+│       ├── math/            # Vec2, Vec3, Vec4, Quat, column-major Mat4
+│       ├── net/             # BitPacker, reliability, channels, connections, UDP/sim transport, snapshots
+│       └── platform/        # SDL3 + GLES3 C header translation & Window management
+├── examples/
+│   └── marble/              # 3D rolling-marble demo
+│       ├── main.zig         # Demo entrypoint & render loop
+│       ├── arena.zig        # Procedural arena geometry & collision resolution
+│       ├── camera.zig       # 3rd-person spring follow camera
+│       └── marble.zig       # Rolling physics, slope gravity & angular spin
 ├── docs/
-│   └── ARCHITECTURE.md # Module breakdown & frame loop
+│   └── ARCHITECTURE.md      # Architecture diagram & module breakdown
 ├── CONTRIBUTING.md
 └── README.md
 ```
@@ -48,9 +54,10 @@ upeo/
 ## Quickstart
 
 ### Prerequisites
-- **Zig 0.16.0+ / 0.17.0+**
+- **Zig 0.16.0+** (verified on `0.17.0`)
 - **SDL3** (`libSDL3`)
-- **OpenGL ES 3 / libGLESv2**
+- **OpenGL ES 3.0** drivers (loaded at runtime via SDL3)
+- *(Optional, for `zig build wasm`)* **Emscripten SDK** (`EMCC` / `EMSDK_SYSROOT`)
 
 ### Running with Nix (Recommended)
 ```bash
@@ -67,9 +74,15 @@ zig build run
 zig build test
 ```
 
+### Building for WebAssembly (Emscripten + WebGL 2.0)
+```bash
+zig build wasm
+```
+Outputs `zig-out/web/index.html`, `index.js`, and `index.wasm`.
+
 ---
 
-## Controls
+## Controls (Marble Demo)
 - **W / Up**: Roll Forward
 - **S / Down**: Roll Backward
 - **A / Left**: Roll Left
